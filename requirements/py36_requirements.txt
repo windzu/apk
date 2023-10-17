@@ -1,0 +1,10 @@
+# common 
+numpy==1.19.4
+pyyaml
+rospkg
+wind-pypcd
+rich
+
+# capture
+PyGObject
+opencv-python==4.5.3.56
