@@ -1,6 +1,7 @@
 # 点云采集
 
 ## 功能
+
 - 订阅点云topic，保存点云至指定路径
 - 支持多个topic同时订阅
 - 支持自定义保存格式，支持保存为`pcd`、`bin`格式
@@ -9,22 +10,24 @@
 - `q` 退出 或者 `ctrl+c` 退出
 
 ## 提供两种使用模式
+
 - 输入参数
 - 输入配置文件路径
 
 ### 输入参数的使用例子
 
 ```bash
-ycpk capture lidar --topics '["/lidar_points/fusion", "/lidar_points/top", "/terrain_map"]' --suffix .pcd --store_dims xyzi --store_path ~/Downloads/capture/lidar
+apk capture lidar --topics '["/lidar_points/fusion", "/lidar_points/top", "/terrain_map"]' --suffix .pcd --store_dims xyzi --store_path ~/Downloads/capture/lidar
 ```
 
 ### 输入配置文件的使用例子
 
 ```bash
-ycpk capture lidar --config ./config.yaml
+apk capture lidar --config ./config.yaml
 ```
 
 config.yaml
+
 ```yaml
 topics: ["/lidar_points/fusion", "/lidar_points/top", "/terrain_map"] # 点云topic list
 suffix: .pcd # 保存格式

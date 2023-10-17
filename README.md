@@ -2,7 +2,7 @@
  * @Author: windzu windzu1@gamil.com
  * @Date: 2023-09-08 10:54:30
  * @LastEditors: wind windzu1@gmail.com
- * @LastEditTime: 2023-10-17 18:55:35
+ * @LastEditTime: 2023-10-17 19:22:22
  * @Description: 
  * Copyright (c) 2023 by windzu, All Rights Reserved. 
 -->
@@ -33,7 +33,7 @@ awesome perception kit
 
 ```bash
 pip3 install apk
-pk --upgrade # 更新
+pip3 install apk --upgrade # 更新
 ```
 
 ### 开发版安装
