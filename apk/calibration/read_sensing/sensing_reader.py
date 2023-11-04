@@ -1,11 +1,12 @@
 """
 Author: wind windzu1@gmail.com
-Date: 2023-09-01 14:48:04
+Date: 2023-10-30 20:29:38
 LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-09-01 15:02:43
+LastEditTime: 2023-11-03 16:49:24
 Description: 
 Copyright (c) 2023 by windzu, All Rights Reserved. 
 """
+
 import subprocess
 import time
 
@@ -160,8 +161,8 @@ class SensingReader:
             "w3@0xI2C_ADDR 0xe4 0x05 0xXX",  # Read start address High byte[23:16]
             "w3@0xI2C_ADDR 0xe4 0x06 0xXX",  # Read start address middle byte[15:8]
             "w3@0xI2C_ADDR 0xe4 0x07 0xXX",  # Read start address low byte[7:0]
-            "w3@0xI2C_ADDR 0xe4 0x08 0x00",  # Read data length high byte[15:8]
-            "w3@0xI2C_ADDR 0xe4 0x09 0x0A",  # Read data length low byte[7:0]
+            "w3@0xI2C_ADDR 0xe4 0x08 0xXX",  # Read data length high byte[15:8]
+            "w3@0xI2C_ADDR 0xe4 0x09 0xXX",  # Read data length low byte[7:0]
             "w3@0xI2C_ADDR 0x81 0x60 0x01",  # Trigger
             "w2@0xI2C_ADDR 0xE7 0x00 rxx",  # Read data
         ]
