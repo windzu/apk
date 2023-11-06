@@ -1,11 +1,12 @@
 """
-Author: wind windzu1@gmail.com
-Date: 2023-09-08 09:53:06
-LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-09-08 13:06:18
+Author: windzu windzu1@gmail.com
+Date: 2023-11-06 23:34:28
+LastEditors: windzu windzu1@gmail.com
+LastEditTime: 2023-11-06 23:35:51
 Description: 
 Copyright (c) 2023 by windzu, All Rights Reserved. 
 """
+
 from argparse import ArgumentParser
 
 
@@ -33,6 +34,12 @@ def main():
     from .format import main as format_main
 
     format_main.add_arguments(format_parser)
+
+    # merge
+    merge_parser = subparsers.add_parser("merge", help="merge commands")
+    from .merge import main as merge_main
+
+    merge_main.add_arguments(format_parser)
 
     args, unknown = parser.parse_known_args()
 
