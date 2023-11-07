@@ -9,7 +9,6 @@
 ## Usage
 
 ```bash
-apk merge record -i ./records # 仅转换
-apk merge record -i ./records --merge_bag # 转换并合并
+apk merge record -i ./records # 仅生成配置文件
 
 ```

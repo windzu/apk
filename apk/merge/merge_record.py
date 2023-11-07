@@ -1,4 +1,12 @@
 """
+Author: wind windzu1@gmail.com
+Date: 2023-11-07 14:58:28
+LastEditors: wind windzu1@gmail.com
+LastEditTime: 2023-11-07 16:07:35
+Description: 
+Copyright (c) 2023 by windzu, All Rights Reserved. 
+"""
+"""
 Author: windzu windzu1@gmail.com
 Date: 2023-11-06 23:34:28
 LastEditors: windzu windzu1@gmail.com
@@ -33,39 +41,50 @@ class MergeRecord:
         self.recorder2ros_config = recorder2ros_config_path
 
     def run(self):
+        # create a folder to save config file
+        config_folder_name = self.input_path_list[0].split("/")[-1].split(".")[0]
+        config_folder_path = (
+            os.path.dirname(self.recorder2ros_config) + "/" + config_folder_name
+        )
+        if not os.path.exists(config_folder_path):
+            os.makedirs(config_folder_path)
+
         bag_file_path_list = []
-        for file_path in track(self.input_path_list):
+        for i, file_path in track(enumerate(self.input_path_list)):
             recorder_file_name = file_path
             bag_file_name = file_path + ".bag"
+            bag_file_name = os.path.join(
+                config_folder_path, bag_file_name.split("/")[-1]
+            )
             bag_file_path_list.append(bag_file_name)
 
-            # rewrite recorder2ros_config.pb.txt
+            # cp recorder2ros_config.pb.txt and change 1 2 line
             # replace first line to "bag_file_name: ${bag_file_name}"
             # replace second line to "recorder_file_name: ${recorder_file_name}"
-            with open(self.recorder2ros_config, "r") as f:
+            new_config_name = f"{config_folder_path}/{i}.pb.txt"
+            os.system(f"cp {self.recorder2ros_config} {new_config_name}")
+
+            with open(new_config_name, "r") as f:
                 lines = f.readlines()
                 lines[0] = f"bag_file_name: {bag_file_name}\n"
                 lines[1] = f"recorder_file_name: {recorder_file_name}\n"
-            with open(self.recorder2ros_config, "w") as f:
+            with open(new_config_name, "w") as f:
                 f.writelines(lines)
 
-            # run recorder2rosbag
-            os.system(f"{self.recorder2rosbag} {self.recorder2ros_config}")
-
-        # merge bag
-        if self.merge_bag_flag:
-            output_bag_file_name = self.input_path_list[0].split("/")[-1].split(".")[0]
-            output_bag_file_path = (
-                os.path.dirname(self.input_path_list[0])
-                + "/"
-                + output_bag_file_name
-                + ".bag"
-            )
-            # apk merge bag -i ./bags -o ./bags/output.bag
-            merge_bag = MergeBag(
-                input_path_list=bag_file_path_list, output=output_bag_file_path
-            )
-            merge_bag.run()
+        # # merge bag
+        # if self.merge_bag_flag:
+        #     output_bag_file_name = self.input_path_list[0].split("/")[-1].split(".")[0]
+        #     output_bag_file_path = (
+        #         os.path.dirname(self.input_path_list[0])
+        #         + "/"
+        #         + output_bag_file_name
+        #         + ".bag"
+        #     )
+        #     # apk merge bag -i ./bags -o ./bags/output.bag
+        #     merge_bag = MergeBag(
+        #         input_path_list=bag_file_path_list, output=output_bag_file_path
+        #     )
+        #     merge_bag.run()
 
 
 def parse_args(argv):
