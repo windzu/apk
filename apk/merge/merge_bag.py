@@ -1,8 +1,8 @@
 """
-Author: wind windzu1@gmail.com
-Date: 2023-11-07 17:15:41
-LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-11-07 17:45:37
+Author: windzu windzu1@gmail.com
+Date: 2023-11-07 23:04:47
+LastEditors: windzu windzu1@gmail.com
+LastEditTime: 2023-11-07 23:57:11
 Description: 
 Copyright (c) 2023 by windzu, All Rights Reserved. 
 """
@@ -23,7 +23,6 @@ class MergeBag:
 
     def run(self):
         with Bag(self.output, "w", compression=self.compression) as o:
-            start = time.perf_counter()
             for file_path in track(self.input_path_list):
                 with Bag(file_path, "r") as ib:
                     for topic, msg, t in ib:
@@ -46,7 +45,7 @@ def parse_args(argv):
         "--input",
         "-i",
         type=str,
-        help="input file or folder path",
+        help="input folder path",
     )
     parser.add_argument(
         "--output",
@@ -78,25 +77,47 @@ def main(args, unknown):
         print(f"{input_path} not exists")
         return
 
-    input_path_list = []
+    input_path_list_list = []
     # check input_path if is a file or folder
     if os.path.isfile(input_path):
         print(f"{input_path} is a file,do not need to merge")
         return
     elif os.path.isdir(input_path):
-        # check suffix if is .bag
-        for file in os.listdir(input_path):
-            if file.endswith(".bag"):
-                input_path_list.append(input_path + "/" + file)
+        # use walk iter all folder and file in input_path
+        for root, dirs, files in os.walk(input_path):
+            # check if there is a bag file in the folder
+            if len(files) > 0:
+                input_path_list = []
+                for file in files:
+                    if file.endswith(".bag"):
+                        input_path_list.append(os.path.join(root, file))
+                if len(input_path_list) > 0:
+                    input_path_list_list.append(input_path_list)
 
     # check output
-    if args.output is None:
-        args.output = input_path + "/output.bag"
+    output_path_list = []
+    for input_path_list in input_path_list_list:
+        if args.output is None:
+            output_path = os.path.join(
+                os.path.dirname(input_path_list[0]), "output.bag"
+            )
+            output_path_list.append(output_path)
+        else:
+            output_path = os.path.join(os.path.dirname(input_path_list[0]), args.output)
+            output_path_list.append(output_path)
 
-    input_path_list.sort()
-    merge_bag = MergeBag(
-        input_path_list=input_path_list,
-        compression=args.compression,
-        output=args.output,
-    )
-    merge_bag.run()
+    for input_path_list, output_path in zip(input_path_list_list, output_path_list):
+        input_path_list.sort()
+        merge_bag = MergeBag(
+            input_path_list=input_path_list,
+            compression=args.compression,
+            output=output_path,
+        )
+        merge_bag.run()
+    # input_path_list.sort()
+    # merge_bag = MergeBag(
+    #     input_path_list=input_path_list,
+    #     compression=args.compression,
+    #     output=args.output,
+    # )
+    # merge_bag.run()
