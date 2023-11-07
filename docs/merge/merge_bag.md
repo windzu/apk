@@ -8,6 +8,8 @@
 ## Usage
 
 ```bash
+apk merge bag -i ./bags
+
 apk merge bag -i ./bags -o ./bags/output.bag
 
 apk merge bag -i ./bags -o ./bags/output.bag -c lz4

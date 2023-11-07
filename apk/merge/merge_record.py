@@ -1,16 +1,16 @@
 """
 Author: wind windzu1@gmail.com
-Date: 2023-11-07 14:58:28
+Date: 2023-11-07 17:15:41
 LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-11-07 16:07:35
+LastEditTime: 2023-11-07 22:48:06
 Description: 
 Copyright (c) 2023 by windzu, All Rights Reserved. 
 """
 """
-Author: windzu windzu1@gmail.com
-Date: 2023-11-06 23:34:28
-LastEditors: windzu windzu1@gmail.com
-LastEditTime: 2023-11-06 23:42:31
+Author: wind windzu1@gmail.com
+Date: 2023-11-07 17:15:41
+LastEditors: wind windzu1@gmail.com
+LastEditTime: 2023-11-07 17:39:26
 Description: 
 Copyright (c) 2023 by windzu, All Rights Reserved. 
 """
@@ -42,10 +42,16 @@ class MergeRecord:
 
     def run(self):
         # create a folder to save config file
-        config_folder_name = self.input_path_list[0].split("/")[-1].split(".")[0]
-        config_folder_path = (
-            os.path.dirname(self.recorder2ros_config) + "/" + config_folder_name
+        bags_folder_path = os.path.join(
+            os.path.dirname(self.input_path_list[0]), "bags"
         )
+        # check if exit bags folder
+        if not os.path.exists(bags_folder_path):
+            os.makedirs(bags_folder_path)
+
+        config_folder_name = self.input_path_list[0].split("/")[-1].split(".")[0]
+        config_folder_path = os.path.join(bags_folder_path, config_folder_name)
+
         if not os.path.exists(config_folder_path):
             os.makedirs(config_folder_path)
 
@@ -66,25 +72,10 @@ class MergeRecord:
 
             with open(new_config_name, "r") as f:
                 lines = f.readlines()
-                lines[0] = f"bag_file_name: {bag_file_name}\n"
-                lines[1] = f"recorder_file_name: {recorder_file_name}\n"
+                lines[0] = 'bag_file_name : "' + str(bag_file_name) + '"\n'
+                lines[1] = 'recorder_file_name : "' + str(recorder_file_name) + '"\n'
             with open(new_config_name, "w") as f:
                 f.writelines(lines)
-
-        # # merge bag
-        # if self.merge_bag_flag:
-        #     output_bag_file_name = self.input_path_list[0].split("/")[-1].split(".")[0]
-        #     output_bag_file_path = (
-        #         os.path.dirname(self.input_path_list[0])
-        #         + "/"
-        #         + output_bag_file_name
-        #         + ".bag"
-        #     )
-        #     # apk merge bag -i ./bags -o ./bags/output.bag
-        #     merge_bag = MergeBag(
-        #         input_path_list=bag_file_path_list, output=output_bag_file_path
-        #     )
-        #     merge_bag.run()
 
 
 def parse_args(argv):
@@ -136,7 +127,8 @@ def main(args, unknown):
     input_path_list = []
     # check input_path if is a file or folder
     if os.path.isfile(input_path):
-        input_path_list.append(input_path)
+        print("input_path should be a folder")
+        return
     elif os.path.isdir(input_path):
         for file in os.listdir(input_path):
             if file.split(".")[-2] == "record":
@@ -162,3 +154,59 @@ def main(args, unknown):
             merge_bag_flag=merge_bag_flag,
         )
         merge_record.run()
+
+    # generate a convert.sh
+    convert_shell_path = os.path.join(input_path, "bags", "convert.sh")
+    # content as below
+    #     #!/bin/bash
+    #     # 获取 record2bag 可执行文件的路径
+    #     RECORD2BAG=$(realpath ~/repo_ws/optimus-modules/bin/recorder2rosbag)
+    #
+    #
+    #     # 当前脚本所在目录
+    #     DIR=$(dirname "$0")
+    #
+    #     # 遍历目录中的所有子文件夹
+    #     for folder in $DIR/*; do
+    #         # 检查是否为目录
+    #         if [ -d "$folder" ]; then
+    #             # 遍历目录中的所有.pb.txt文件
+    #             for file in $folder/*.pb.txt; do
+    #                 # 检查文件是否存在
+    #                 if [ -f "$file" ]; then
+    #                     # 执行test命令
+    #                     $RECORD2BAG "$file"
+    #                 fi
+    #             done
+    #         fi
+    #     done
+    #
+    #     # 结束脚本
+    #     echo "Conversion complete."
+
+    with open(convert_shell_path, "w") as f:
+        f.write("#!/bin/bash\n")
+        f.write(
+            "# 获取 record2bag 可执行文件的路径\n"
+            "RECORD2BAG=$(realpath ~/repo_ws/optimus-modules/bin/recorder2rosbag)\n\n"
+        )
+        f.write("# 当前脚本所在目录\n")
+        f.write('DIR=$(dirname "$0")\n\n')
+        f.write("# 遍历目录中的所有子文件夹\n")
+        f.write("for folder in $DIR/*; do\n")
+        f.write("    # 检查是否为目录\n")
+        f.write('    if [ -d "$folder" ]; then\n')
+        f.write("        # 遍历目录中的所有.pb.txt文件\n")
+        f.write("        for file in $folder/*.pb.txt; do\n")
+        f.write("            # 检查文件是否存在\n")
+        f.write('            if [ -f "$file" ]; then\n')
+        f.write("                # 执行test命令\n")
+        f.write('                $RECORD2BAG "$file"\n')
+        f.write("            fi\n")
+        f.write("        done\n")
+        f.write("    fi\n")
+        f.write("done\n\n")
+        f.write("# 结束脚本\n")
+        f.write('echo "Conversion complete."\n')
+
+    os.system(f"chmod +x {convert_shell_path}")

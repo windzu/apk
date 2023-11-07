@@ -1,3 +1,11 @@
+"""
+Author: wind windzu1@gmail.com
+Date: 2023-11-07 17:15:41
+LastEditors: wind windzu1@gmail.com
+LastEditTime: 2023-11-07 17:45:37
+Description: 
+Copyright (c) 2023 by windzu, All Rights Reserved. 
+"""
 import argparse
 import os
 import time
@@ -44,7 +52,7 @@ def parse_args(argv):
         "--output",
         "-o",
         type=str,
-        default="./output.bag",
+        default=None,
         help="specify output file or folder path [default: ./]",
     )
 
@@ -73,17 +81,17 @@ def main(args, unknown):
     input_path_list = []
     # check input_path if is a file or folder
     if os.path.isfile(input_path):
-        # check suffix if is .bag
-        if input_path.endswith(".bag"):
-            input_path_list.append(input_path)
-        else:
-            print(f"{input_path} is not a bag file")
-            return
+        print(f"{input_path} is a file,do not need to merge")
+        return
     elif os.path.isdir(input_path):
         # check suffix if is .bag
         for file in os.listdir(input_path):
             if file.endswith(".bag"):
                 input_path_list.append(input_path + "/" + file)
+
+    # check output
+    if args.output is None:
+        args.output = input_path + "/output.bag"
 
     input_path_list.sort()
     merge_bag = MergeBag(
