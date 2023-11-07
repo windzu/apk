@@ -39,7 +39,7 @@ def main():
     merge_parser = subparsers.add_parser("merge", help="merge commands")
     from .merge import main as merge_main
 
-    merge_main.add_arguments(format_parser)
+    merge_main.add_arguments(merge_parser)
 
     args, unknown = parser.parse_known_args()
 
