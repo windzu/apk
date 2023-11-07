@@ -1,4 +1,12 @@
 """
+Author: windzu windzu1@gmail.com
+Date: 2023-11-07 23:04:47
+LastEditors: windzu windzu1@gmail.com
+LastEditTime: 2023-11-07 23:11:29
+Description: 
+Copyright (c) 2023 by windzu, All Rights Reserved. 
+"""
+"""
 Author: wind windzu1@gmail.com
 Date: 2023-11-07 17:15:41
 LastEditors: wind windzu1@gmail.com
@@ -122,6 +130,8 @@ def main(args, unknown):
         print(f"{input_path} not exists")
         return
 
+    input_path = os.path.abspath(input_path)
+
     merge_bag_flag = args.merge_bag
 
     input_path_list = []
@@ -131,8 +141,9 @@ def main(args, unknown):
         return
     elif os.path.isdir(input_path):
         for file in os.listdir(input_path):
-            if file.split(".")[-2] == "record":
-                input_path_list.append(input_path + "/" + file)
+            if len(file.split(".")) == 3:
+                if file.split(".")[-2] == "record":
+                    input_path_list.append(input_path + "/" + file)
 
     input_path_list.sort()
 
