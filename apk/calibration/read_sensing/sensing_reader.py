@@ -9,6 +9,10 @@ Copyright (c) 2023 by windzu, All Rights Reserved.
 
 import subprocess
 import time
+from .common import SUPPORT_CAMERA_INFO_DICT
+import os
+import yaml
+
 
 from .parse_result import (
     parse_camera_info,
@@ -19,45 +23,75 @@ from .parse_result import (
 
 
 class SensingReader:
-    def __init__(self, i2c_bus_and_addr_pair_list, read_otp_data_command_dict_dict):
-        self.i2c_bus_and_addr_pair_list = i2c_bus_and_addr_pair_list
-        self.read_otp_data_command_dict_dict = read_otp_data_command_dict_dict
+    def __init__(
+        self,
+        camera_model,
+        i2c_bus,
+        i2c_addr,
+    ):
+        self.camera_model = camera_model
+        self.CAMERA_INFO_DICT = SUPPORT_CAMERA_INFO_DICT[camera_model]
+        self.i2c_bus = i2c_bus
+        self.i2c_addr = i2c_addr
+        self.read_otp_data_command_dict_dict = {
+            "camera_info": {
+                "start_address": "0x00000",
+                "data_length": 10,
+            },
+            "lens_info": {
+                "start_address": "0x00020",
+                "data_length": 9,
+            },
+            "serial_number": {
+                "start_address": "0x00040",
+                "data_length": 7,
+            },
+            "camera_matrix_info": {
+                "start_address": "0x00060",
+                "data_length": 133,
+            },
+        }
 
-    def read(self, i2c_bus_and_addr_pair_list, read_otp_data_command_dict_dict):
-        for [i2c_bus, i2c_addr] in i2c_bus_and_addr_pair_list:
-            # for i2c_bus in i2c_bus_list:
-            #     for i2c_addr in i2c_addr_list:
-            # 1. remap registers
+        self.need_trigger = self.CAMERA_INFO_DICT["need_trigger"]
+
+        self.result_info_dict = {}
+
+    def read(self):
+        # 1. calculate new address
+        self.calculate_new_addr()
+
+        # 2. flash need trigger
+        if self.need_trigger:
+            # 2.1. remap registers
             remap_registers_command = self.get_remap_registers_command()
-            self.i2c_transfer(i2c_bus, i2c_addr, remap_registers_command)
+            self.i2c_transfer(self.i2c_bus, self.i2c_addr, remap_registers_command)
 
-            # 2. load flash
+            # 2.2 load flash
             load_flash_command = self.get_load_flash_command()
-            self.i2c_transfer(i2c_bus, i2c_addr, load_flash_command)
+            self.i2c_transfer(self.i2c_bus, self.i2c_addr, load_flash_command)
 
-            # 3. read otp data
-            result_dict = {}
-            for (
-                info_type,
-                read_otp_data_command_dict,
-            ) in read_otp_data_command_dict_dict.items():
-                read_otp_data_command = self.get_read_otp_data_command(
-                    read_otp_data_command_dict
-                )
-                result_list = self.i2c_transfer(
-                    i2c_bus, i2c_addr, read_otp_data_command
-                )
-                if len(result_list) > 0:
-                    result = result_list[-1]
-                    print("i2c_bus : ", i2c_bus)
-                    print("i2c_addr : ", i2c_addr)
-                    # print("info_type : ",info_type)
-                    # print(f"start_address: {read_otp_data_command_dict['start_address']}, data_length: {read_otp_data_command_dict['data_length']}")
-                    # print("result : ",result)
-                    # # debug
-                    print("result type : ", type(result))
-                    result_dict[info_type] = result.split("\n")[0].split(" ")
-            self.parse_result(result_dict)
+        # 3. read otp data
+        result_dict = {}
+        for (
+            info_type,
+            read_otp_data_command_dict,
+        ) in self.read_otp_data_command_dict_dict.items():
+            read_otp_data_command = self.get_read_otp_data_command(
+                read_otp_data_command_dict
+            )
+            result_list = self.i2c_transfer(
+                self.i2c_bus, self.i2c_addr, read_otp_data_command
+            )
+            if len(result_list) > 0:
+                result = result_list[-1]
+                result_dict[info_type] = result.split("\n")[0].split(" ")
+        self.parse_result(result_dict)
+
+        # 4. check result_info_dict
+        self.check_result_info_dict()
+
+        # 5. save result_info_dict
+        self.save_result_info_dict_to_yaml()
 
     def parse_result(self, result_dict):
         result_info_dict = {}
@@ -76,13 +110,26 @@ class SensingReader:
                 result_info_dict[info_type] = info
             else:
                 print("Unknow info_type : ", info_type)
-        # check if have camera_info key
-        if "camera_info" in result_info_dict.keys():
-            # check if result_info_dict["camera_info"]["sensor_id"] is "OX01F"
-            if result_info_dict["camera_info"]["sensor_id"] == "OX01F":
-                print("result_info_dict : ", result_info_dict)
-            # print("result_info_dict : ",result_info_dict)
 
+        self.result_info_dict = result_info_dict
+
+    def calculate_new_addr(self):
+        addr_offset = str(self.CAMERA_INFO_DICT["addr_offset"])
+        read_otp_data_command_dict_dict = self.read_otp_data_command_dict_dict
+
+        # iter read_otp_data_command_dict_dict
+        for key, value in read_otp_data_command_dict_dict.items():
+            # example :
+            #   start_address : 0x00000
+            #   addr_offset : 0x10000
+            #   new_start_address : 0x10000
+            start_address = str(value["start_address"])
+            new_start_address = hex(int(start_address, 16) + int(addr_offset, 16))
+            value["start_address"] = new_start_address
+
+        self.read_otp_data_command_dict_dict = read_otp_data_command_dict_dict
+
+    @staticmethod
     def i2c_transfer(i2c_bus, i2c_addr, command_list):
         cmd_base = ["sudo", "i2ctransfer", "-f", "-y", i2c_bus]
         cmd_base_str = " ".join(cmd_base)
@@ -205,3 +252,55 @@ class SensingReader:
         )
 
         return read_otp_data_command
+
+    def check_result_info_dict(self):
+        # check camera_info
+        if "camera_info" in self.result_info_dict.keys():
+            if "sensor_id" in self.result_info_dict["camera_info"].keys():
+                if (
+                    self.result_info_dict["camera_info"]["sensor_id"]
+                    == self.CAMERA_INFO_DICT["sensor_id"]
+                ):
+                    # print("sensor_id check pass") in green color
+                    print("\033[1;32m 1. sensor_id check pass \033[0m")
+                else:
+                    print(self.result_info_dict)
+                    raise Exception("sensor_id check fail ")
+            else:
+                raise Exception("sensor_id not in camera_info")
+        else:
+            raise Exception("camera_info not in result_info_dict")
+
+        # check camera_matrix_info
+        if "camera_matrix_info" in self.result_info_dict.keys():
+            camera_matrix_info = self.result_info_dict["camera_matrix_info"]
+            fx = camera_matrix_info["fx"]
+            fy = camera_matrix_info["fy"]
+            cx = camera_matrix_info["cx"]
+            cy = camera_matrix_info["cy"]
+            # fx and fy should be in the range of 0 to 100000
+            if fx > 0 and fx < 100000 and fy > 0 and fy < 100000:
+                # print("fx and fy check pass") in green color
+                print("\033[1;32m 2. fx and fy check pass \033[0m")
+            else:
+                raise Exception("fx and fy check fail")
+        else:
+            raise Exception("camera_matrix_info not in result_info_dict")
+
+        print("\033[1;32m 3. check pass \033[0m")
+        print(self.result_info_dict)
+
+    def save_result_info_dict_to_yaml(self):
+        result_filname = "result_0.yaml"
+        # check file exist ,if not exist ,create it,else filename+1
+        while os.path.exists(result_filname):
+            result_filename_count = int(result_filname.split(".")[0].split("_")[-1])
+            result_filename_count += 1
+            result_filname = "result_" + str(result_filename_count) + ".yaml"
+
+        # save dict to yaml format
+        with open(result_filname, "w") as f:
+            yaml.dump(self.result_info_dict, f)
+
+    def save_result_info_dict_to_sensor_param(self):
+        pass

@@ -24,6 +24,10 @@ def lidar2lidar_command(args):
     print("lidar2lidar on the way")
     pass
 
+def read_sensing(args, unknown):
+    from .read_sensing import main as read_sensing_main
+    read_sensing_main(args, unknown)
+
 
 def add_arguments(parser):
     subparsers = parser.add_subparsers(title="data commands")
@@ -43,3 +47,9 @@ def add_arguments(parser):
         "lidar2lidar", help="calibration lidar2lidar"
     )
     lidar2lidar_parser.set_defaults(func=lidar2lidar_command)
+
+    # read_sensing
+    read_sensing_parser = subparsers.add_parser(
+        "read_sensing", help="read sensing data"
+    )
+    read_sensing_parser.set_defaults(func=read_sensing)
