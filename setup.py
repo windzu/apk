@@ -43,7 +43,7 @@ def parse_requirements(fname_list=[]):
 setup(
     # 描述信息
     name="apk",
-    version="0.0.3",
+    version="0.0.4",
     description="awesome perception kit",
     author="windzu",
     author_email="windzu1@gmail.com",
