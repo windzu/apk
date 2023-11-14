@@ -4,20 +4,20 @@ SUPPORT_CAMERA_INFO_DICT = {
         "width": 1280,
         "height": 720,
         "addr_offset": "0x10000",
-        "need_trigger": True,
+        "storage_medium": "FLASH",
     },
     "SG2-AR0233C": {
         "sensor_id": "AR0233",
         "width": 1920,
         "height": 1080,
         "addr_offset": "0x00000",
-        "need_trigger": False,
+        "storage_medium": "EEPROM",
     },
     "SG3S-ISX031C-GMSL2F": {
         "sensor_id": "AR0233",
         "width": 1920,
         "height": 1536,
         "addr_offset": "0x80000",
-        "need_trigger": True,
+        "storage_medium": "FLASH",
     },
 }

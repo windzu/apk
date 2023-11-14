@@ -12,6 +12,7 @@ import time
 from .common import SUPPORT_CAMERA_INFO_DICT
 import os
 import yaml
+from .utils import convert_6k_to_2k
 
 
 from .parse_result import (
@@ -33,7 +34,7 @@ class SensingReader:
         self.CAMERA_INFO_DICT = SUPPORT_CAMERA_INFO_DICT[camera_model]
         self.i2c_bus = i2c_bus
         self.i2c_addr = i2c_addr
-        self.read_otp_data_command_dict_dict = {
+        self.need_read_fields = {
             "camera_info": {
                 "start_address": "0x00000",
                 "data_length": 10,
@@ -52,36 +53,36 @@ class SensingReader:
             },
         }
 
-        self.need_trigger = self.CAMERA_INFO_DICT["need_trigger"]
-
         self.result_info_dict = {}
+
+        self.flash_read_otp_data_command = [
+            "w3@0xI2C_ADDR 0x81 0x81 0x00",  # disable CRC
+            "w3@0xI2C_ADDR 0xe4 0x00 0x81",  # Command ID
+            "w3@0xI2C_ADDR 0xe4 0x01 0x00",  # Command Mode
+            "w3@0xI2C_ADDR 0xe4 0x02 0x00",  # Para Length
+            "w3@0xI2C_ADDR 0xe4 0x03 0x05",  # Para Length
+            "w3@0xI2C_ADDR 0xe4 0x04 0x12",  # Read command
+            "w3@0xI2C_ADDR 0xe4 0x05 0xXX",  # Read start address High byte[23:16]
+            "w3@0xI2C_ADDR 0xe4 0x06 0xXX",  # Read start address middle byte[15:8]
+            "w3@0xI2C_ADDR 0xe4 0x07 0xXX",  # Read start address low byte[7:0]
+            "w3@0xI2C_ADDR 0xe4 0x08 0xXX",  # Read data length high byte[15:8]
+            "w3@0xI2C_ADDR 0xe4 0x09 0xXX",  # Read data length low byte[7:0]
+            "w3@0xI2C_ADDR 0x81 0x60 0x01",  # Trigger
+            "w2@0xI2C_ADDR 0xE7 0x00 rxx",  # Read data
+        ]
+
+        self.eeprom_read_otp_data_command = [
+            "w2@0xI2C_ADDR 0x12 0x34 rxx",  # Read data
+        ]
 
     def read(self):
         # 1. calculate new address
-        self.calculate_new_addr()
+        self.need_read_fields = self.calculate_new_addr()
 
-        # 2. flash need trigger
-        if self.need_trigger:
-            # 2.1. remap registers
-            remap_registers_command = self.get_remap_registers_command()
-            self.i2c_transfer(self.i2c_bus, self.i2c_addr, remap_registers_command)
-
-            # 2.2 load flash
-            load_flash_command = self.get_load_flash_command()
-            self.i2c_transfer(self.i2c_bus, self.i2c_addr, load_flash_command)
-
-        # 3. read otp data
+        # 2. read otp data
         result_dict = {}
-        for (
-            info_type,
-            read_otp_data_command_dict,
-        ) in self.read_otp_data_command_dict_dict.items():
-            read_otp_data_command = self.get_read_otp_data_command(
-                read_otp_data_command_dict
-            )
-            result_list = self.i2c_transfer(
-                self.i2c_bus, self.i2c_addr, read_otp_data_command
-            )
+        for info_type, command_dict in self.need_read_fields.items():
+            result_list = self.get_otp_data(command_dict)
             if len(result_list) > 0:
                 result = result_list[-1]
                 result_dict[info_type] = result.split("\n")[0].split(" ")
@@ -90,8 +91,8 @@ class SensingReader:
         # 4. check result_info_dict
         self.check_result_info_dict()
 
-        # 5. save result_info_dict
-        self.save_result_info_dict_to_yaml()
+        # 5. save result
+        self.save_result()
 
     def parse_result(self, result_dict):
         result_info_dict = {}
@@ -115,19 +116,24 @@ class SensingReader:
 
     def calculate_new_addr(self):
         addr_offset = str(self.CAMERA_INFO_DICT["addr_offset"])
-        read_otp_data_command_dict_dict = self.read_otp_data_command_dict_dict
+        need_read_fields = self.need_read_fields.copy()
 
-        # iter read_otp_data_command_dict_dict
-        for key, value in read_otp_data_command_dict_dict.items():
+        # iter need_read_fields
+        for key, value in need_read_fields.items():
             # example :
             #   start_address : 0x00000
             #   addr_offset : 0x10000
             #   new_start_address : 0x10000
             start_address = str(value["start_address"])
             new_start_address = hex(int(start_address, 16) + int(addr_offset, 16))
+            # format new_start_address to 0xXXXXXX
+            new_start_address = new_start_address.replace("0x", "")
+            new_start_address = new_start_address.zfill(6)
+            new_start_address = "0x" + new_start_address
+
             value["start_address"] = new_start_address
 
-        self.read_otp_data_command_dict_dict = read_otp_data_command_dict_dict
+        return need_read_fields
 
     @staticmethod
     def i2c_transfer(i2c_bus, i2c_addr, command_list):
@@ -187,9 +193,51 @@ class SensingReader:
         ]
         return load_flash_command
 
+    def get_otp_data(self, command_dict):
+        # 1. 根据otp存储介质选择不同的读取命令和方式
+        storage_medium = self.CAMERA_INFO_DICT["storage_medium"].lower()
+        if storage_medium == "flash":
+            # NOTE: 读取flash需要先进行触发和加载flash
+            # remap registers
+            remap_registers_command = self.get_remap_registers_command()
+            self.i2c_transfer(self.i2c_bus, self.i2c_addr, remap_registers_command)
+
+            # load flash
+            load_flash_command = self.get_load_flash_command()
+            self.i2c_transfer(self.i2c_bus, self.i2c_addr, load_flash_command)
+
+            read_otp_data_command = self.flash_read_otp_data_command.copy()
+            read_otp_data_command = self.get_read_flash_otp_data_command(
+                read_otp_data_command,
+                command_dict["start_address"],
+                command_dict["data_length"],
+            )
+        elif storage_medium == "eeprom":
+            read_otp_data_command = self.eeprom_read_otp_data_command.copy()
+            read_otp_data_command = self.get_read_eeprom_otp_data_command(
+                read_otp_data_command,
+                command_dict["start_address"],
+                command_dict["data_length"],
+            )
+        else:
+            raise Exception("storage_medium error")
+
+        # 2. 执行读取命令
+        result_list = self.i2c_transfer(
+            self.i2c_bus,
+            self.i2c_addr,
+            read_otp_data_command,
+        )
+
+        return result_list
+
     @staticmethod
-    def get_read_otp_data_command(command_dict):
-        """读取OTP数据
+    def get_read_flash_otp_data_command(
+        read_otp_data_command,
+        start_address,
+        data_length,
+    ):
+        """获取读取FLASH的OTP数据的命令
         读取数据分为以下几个步骤:
             1. 设置寄存器进入读取OTP数据模式
             2. 设置读取OTP数据的起始地址
@@ -197,23 +245,9 @@ class SensingReader:
             4. 触发读取OTP数据
             5. 读取OTP数据(也需要设置读取数据的长度)
         """
-        # 读取OTP数据
-        read_otp_data_command = [
-            "w3@0xI2C_ADDR 0x81 0x81 0x00",  # disable CRC
-            "w3@0xI2C_ADDR 0xe4 0x00 0x81",  # Command ID
-            "w3@0xI2C_ADDR 0xe4 0x01 0x00",  # Command Mode
-            "w3@0xI2C_ADDR 0xe4 0x02 0x00",  # Para Length
-            "w3@0xI2C_ADDR 0xe4 0x03 0x05",  # Para Length
-            "w3@0xI2C_ADDR 0xe4 0x04 0x12",  # Read command
-            "w3@0xI2C_ADDR 0xe4 0x05 0xXX",  # Read start address High byte[23:16]
-            "w3@0xI2C_ADDR 0xe4 0x06 0xXX",  # Read start address middle byte[15:8]
-            "w3@0xI2C_ADDR 0xe4 0x07 0xXX",  # Read start address low byte[7:0]
-            "w3@0xI2C_ADDR 0xe4 0x08 0xXX",  # Read data length high byte[15:8]
-            "w3@0xI2C_ADDR 0xe4 0x09 0xXX",  # Read data length low byte[7:0]
-            "w3@0xI2C_ADDR 0x81 0x60 0x01",  # Trigger
-            "w2@0xI2C_ADDR 0xE7 0x00 rxx",  # Read data
-        ]
 
+        # - update start address 6 7 8
+        # - update data length 9 10
         def parse_start_address(address):
             """将输入的地址转换为3段8位的16进制的列表
             example: 0x123456 -> 0x12 0x34 0x56
@@ -232,13 +266,9 @@ class SensingReader:
             data_length = data_length.zfill(4)
             return [f"0x{data_length[i:i+2]}" for i in range(0, 4, 2)]
 
-        start_address_list = parse_start_address(command_dict["start_address"])
-        data_length_list = parse_data_length(command_dict["data_length"])
+        start_address_list = parse_start_address(start_address)
+        data_length_list = parse_data_length(data_length)
 
-        # update read_otp_data_command
-        # - update start address 6 7 8
-        # - update data length 9 10
-        # - update read data length 12
         for i in range(3):
             read_otp_data_command[6 + i] = read_otp_data_command[6 + i].replace(
                 "0xXX", start_address_list[i]
@@ -248,7 +278,41 @@ class SensingReader:
                 "0xXX", data_length_list[i]
             )
         read_otp_data_command[12] = read_otp_data_command[12].replace(
-            "rxx", f"r{command_dict['data_length']}"
+            "rxx", f"r{data_length}"
+        )
+
+        return read_otp_data_command
+
+    @staticmethod
+    def get_read_eeprom_otp_data_command(
+        read_otp_data_command,
+        start_address,
+        data_length,
+    ):
+        def parse_start_address(address):
+            """将输入的地址转换为2段8位的16进制的列表
+            example: 0x003456 -> 0x34 0x56
+            """
+            address = address.replace("0x", "")
+            address = address.zfill(6)
+
+            assert address[0] == "0" and address[1] == "0"
+            return [f"0x{address[i:i+2]}" for i in range(2, 6, 2)]
+
+        assert len(read_otp_data_command) == 1
+        assert len(start_address) == 8
+
+        start_address_list = parse_start_address(start_address)
+
+        read_otp_data_command[0] = read_otp_data_command[0].replace(
+            "0x12", start_address_list[0]
+        )
+        read_otp_data_command[0] = read_otp_data_command[0].replace(
+            "0x34", start_address_list[1]
+        )
+
+        read_otp_data_command[0] = read_otp_data_command[0].replace(
+            "rxx", f"r{data_length}"
         )
 
         return read_otp_data_command
@@ -290,7 +354,71 @@ class SensingReader:
         print("\033[1;32m 3. check pass \033[0m")
         print(self.result_info_dict)
 
-    def save_result_info_dict_to_yaml(self):
+    def save_result(self):
+        # 1. transfer result
+        result_info_dict = self.transfer_result()
+
+        # 2. save result
+        self.save_result_info_dict_to_yaml(result_info_dict)
+        self.save_result_info_dict_to_sensor_param(result_info_dict)
+
+    def transfer_result(self):
+        k_list = []
+        p_list = []
+        camera_matrix_info = self.result_info_dict["camera_matrix_info"]
+        image_width = camera_matrix_info["image_width"]
+        image_height = camera_matrix_info["image_height"]
+        fx = camera_matrix_info["fx"]
+        fy = camera_matrix_info["fy"]
+        cx = camera_matrix_info["cx"]
+        cy = camera_matrix_info["cy"]
+        model = camera_matrix_info["model"].lower()
+        # judge camera is fisheye or pinhole
+        if model == "pinhole":
+            k_list.append(camera_matrix_info["pinhole_k1"])
+            k_list.append(camera_matrix_info["pinhole_k2"])
+            k_list.append(camera_matrix_info["pinhole_k3"])
+            k_list.append(camera_matrix_info["pinhole_k4"])
+            k_list.append(camera_matrix_info["pinhole_k5"])
+            k_list.append(camera_matrix_info["pinhole_k6"])
+            p_list.append(camera_matrix_info["pinhole_p1"])
+            p_list.append(camera_matrix_info["pinhole_p2"])
+
+            k_list = convert_6k_to_2k(
+                width=image_width,
+                height=image_height,
+                fx=fx,
+                fy=fy,
+                cx=cx,
+                cy=cy,
+                k_list=k_list,
+            )
+
+        elif model == "fisheye":
+            k_list.append(camera_matrix_info["fisheye_k1"])
+            k_list.append(camera_matrix_info["fisheye_k2"])
+            k_list.append(camera_matrix_info["fisheye_k3"])
+            k_list.append(camera_matrix_info["fisheye_k4"])
+        else:
+            raise Exception("camera_matrix_info model error")
+
+        result_info_dict = {}
+        result_info_dict["camera_info"] = self.result_info_dict["camera_info"]
+        result_info_dict["lens_info"] = self.result_info_dict["lens_info"]
+        result_info_dict["camera_matrix_info"] = {}
+        result_info_dict["camera_matrix_info"]["image_width"] = image_width
+        result_info_dict["camera_matrix_info"]["image_height"] = image_height
+        result_info_dict["camera_matrix_info"]["fx"] = fx
+        result_info_dict["camera_matrix_info"]["fy"] = fy
+        result_info_dict["camera_matrix_info"]["cx"] = cx
+        result_info_dict["camera_matrix_info"]["cy"] = cy
+        result_info_dict["camera_matrix_info"]["model"] = model
+        result_info_dict["camera_matrix_info"]["k_list"] = k_list
+        result_info_dict["camera_matrix_info"]["p_list"] = p_list
+
+        return result_info_dict
+
+    def save_result_info_dict_to_yaml(self, result_info_dict):
         result_filname = "result_0.yaml"
         # check file exist ,if not exist ,create it,else filename+1
         while os.path.exists(result_filname):
@@ -300,7 +428,7 @@ class SensingReader:
 
         # save dict to yaml format
         with open(result_filname, "w") as f:
-            yaml.dump(self.result_info_dict, f)
+            yaml.dump(result_info_dict, f, default_flow_style=False)
 
-    def save_result_info_dict_to_sensor_param(self):
+    def save_result_info_dict_to_sensor_param(self, result_info_dict):
         pass

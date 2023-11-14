@@ -31,7 +31,17 @@ def parse_camera_info(result):
     # parse result
     #############################
     # sensor_id
-    if result[0] == "0x52":
+    if result[0] == "0x00":
+        camera_info["sensor_id"] = "Undefined"
+    elif result[0] == "0x10":
+        camera_info["sensor_id"] = "AR0132"
+    elif result[0] == "0x11":
+        camera_info["sensor_id"] = "AR0143"
+    elif result[0] == "0x16":
+        camera_info["sensor_id"] = "AR0233"
+    elif result[0] == "0x33":
+        camera_info["sensor_id"] = "ISX031"
+    elif result[0] == "0x52":
         camera_info["sensor_id"] = "OX01F"
     else:
         camera_info["sensor_id"] = "Undefined"
