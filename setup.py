@@ -1,5 +1,13 @@
 """
 Author: wind windzu1@gmail.com
+Date: 2023-11-14 15:14:14
+LastEditors: wind windzu1@gmail.com
+LastEditTime: 2023-11-14 15:53:39
+Description: 
+Copyright (c) 2023 by windzu, All Rights Reserved. 
+"""
+"""
+Author: wind windzu1@gmail.com
 Date: 2023-11-07 17:15:41
 LastEditors: wind windzu1@gmail.com
 LastEditTime: 2023-11-07 17:17:17
@@ -43,7 +51,7 @@ def parse_requirements(fname_list=[]):
 setup(
     # 描述信息
     name="apk",
-    version="0.0.4",
+    version="0.0.5",
     description="awesome perception kit",
     author="windzu",
     author_email="windzu1@gmail.com",

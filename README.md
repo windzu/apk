@@ -2,7 +2,7 @@
  * @Author: windzu windzu1@gamil.com
  * @Date: 2023-09-08 10:54:30
  * @LastEditors: wind windzu1@gmail.com
- * @LastEditTime: 2023-10-17 19:22:22
+ * @LastEditTime: 2023-11-14 15:46:47
  * @Description: 
  * Copyright (c) 2023 by windzu, All Rights Reserved. 
 -->
@@ -30,6 +30,14 @@ awesome perception kit
 - ros1
 
 #### 安装
+
+先安装 apt 依赖
+
+```bash
+sudo apt-get install libgirepository1.0-dev libcairo2-dev libglib2.0-dev
+```
+
+然后安装 apk
 
 ```bash
 pip3 install apk
