@@ -1,5 +1,13 @@
 """
 Author: wind windzu1@gmail.com
+Date: 2023-11-14 15:14:14
+LastEditors: wind windzu1@gmail.com
+LastEditTime: 2023-11-14 18:36:55
+Description: 
+Copyright (c) 2023 by windzu, All Rights Reserved. 
+"""
+"""
+Author: wind windzu1@gmail.com
 Date: 2023-10-30 20:29:38
 LastEditors: wind windzu1@gmail.com
 LastEditTime: 2023-11-03 16:49:24
@@ -7,20 +15,20 @@ Description:
 Copyright (c) 2023 by windzu, All Rights Reserved. 
 """
 
+import os
 import subprocess
 import time
-from .common import SUPPORT_CAMERA_INFO_DICT
-import os
+
 import yaml
-from .utils import convert_6k_to_2k
 
-
+from .common import SUPPORT_CAMERA_INFO_DICT
 from .parse_result import (
     parse_camera_info,
     parse_camera_matrix_info,
     parse_lens_info,
     parse_serial_number,
 )
+from .utils import convert_6k_to_2k
 
 
 class SensingReader:
@@ -431,4 +439,52 @@ class SensingReader:
             yaml.dump(result_info_dict, f, default_flow_style=False)
 
     def save_result_info_dict_to_sensor_param(self, result_info_dict):
-        pass
+        result_filname = "result_0.txt"
+        # check file exist ,if not exist ,create it,else filename+1
+        while os.path.exists(result_filname):
+            result_filename_count = int(result_filname.split(".")[0].split("_")[-1])
+            result_filename_count += 1
+            result_filname = "result_" + str(result_filename_count) + ".txt"
+
+        sensor_param_template = """
+            sensor_units {
+                date: "2023-04-25 16:31:41"
+                name: "cam_back"
+                topic: "/cam_xxx"
+                type:  Pinehole or Fisheye
+                enable: true
+                tf_config {
+                    tf_x: 0
+                    tf_y: 0
+                    tf_z: 0
+                    tf_roll: 0
+                    tf_pitch: 0
+                    tf_yaw: 0
+                }
+                camera_config {
+                    width : xxx
+                    height : xxx
+                    color_space : YUYV
+                    video_id : "/dev/videox"
+                    fps : 30
+                    camera_intrinsics {
+                        K_0_0 : 0
+                        K_0_1 : 0
+                        K_0_2 : 0
+                        K_1_0 : 0
+                        K_1_1 : 0
+                        K_1_2 : 0
+                        K_2_0 : 0
+                        K_2_1 : 0
+                        K_2_2 : 1
+                        D_0 : 0
+                        D_1 : 0
+                        D_2 : 0
+                        D_3 : 0
+                        D_4 : 0
+                    }
+                }
+            }
+        """
+        # use result_info_dict to replace some value
+        current_data = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
