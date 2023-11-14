@@ -447,44 +447,102 @@ class SensingReader:
             result_filname = "result_" + str(result_filename_count) + ".txt"
 
         sensor_param_template = """
-            sensor_units {
-                date: "2023-04-25 16:31:41"
-                name: "cam_back"
-                topic: "/cam_xxx"
-                type:  Pinehole or Fisheye
-                enable: true
-                tf_config {
-                    tf_x: 0
-                    tf_y: 0
-                    tf_z: 0
-                    tf_roll: 0
-                    tf_pitch: 0
-                    tf_yaw: 0
-                }
-                camera_config {
-                    width : xxx
-                    height : xxx
-                    color_space : YUYV
-                    video_id : "/dev/videox"
-                    fps : 30
-                    camera_intrinsics {
-                        K_0_0 : 0
-                        K_0_1 : 0
-                        K_0_2 : 0
-                        K_1_0 : 0
-                        K_1_1 : 0
-                        K_1_2 : 0
-                        K_2_0 : 0
-                        K_2_1 : 0
-                        K_2_2 : 1
-                        D_0 : 0
-                        D_1 : 0
-                        D_2 : 0
-                        D_3 : 0
-                        D_4 : 0
-                    }
-                }
-            }
+sensor_units {
+    date: date_template
+    name: "cam_xxxxxxxxxxxxxxxxxxxxxxx"
+    topic: "/cam_xxxxxxxxxxxxxxxxxxxxx"
+    type:  type_template
+    enable: true
+    tf_config {
+        tf_x: 0
+        tf_y: 0
+        tf_z: 0
+        tf_roll: 0
+        tf_pitch: 0
+        tf_yaw: 0
+    }
+    camera_config {
+        width : width_template
+        height : height_template
+        color_space : color_space_template
+        video_id : "/dev/videox"
+        fps : 30
+        camera_intrinsics {
+            K_0_0 : K_0_0_template
+            K_0_1 : 0
+            K_0_2 : K_0_2_template
+            K_1_0 : 0
+            K_1_1 : K_1_1_template
+            K_1_2 : K_1_2_template
+            K_2_0 : 0
+            K_2_1 : 0
+            K_2_2 : 1
+            D_0 : D_0_template
+            D_1 : D_1_template
+            D_2 : D_2_template
+            D_3 : D_3_template
+            D_4 : D_4_template
+        }
+    }
+}
         """
         # use result_info_dict to replace some value
-        current_data = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        data = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        color_space = "YUYV"
+        type = (
+            "Pinehole"
+            if result_info_dict["camera_matrix_info"]["model"].lower() == "pinhole"
+            else "Fisheye"
+        )
+        width = result_info_dict["camera_matrix_info"]["image_width"]
+        height = result_info_dict["camera_matrix_info"]["image_height"]
+        K_0_0 = result_info_dict["camera_matrix_info"]["fx"]
+        K_1_1 = result_info_dict["camera_matrix_info"]["fy"]
+        K_0_2 = result_info_dict["camera_matrix_info"]["cx"]
+        K_1_2 = result_info_dict["camera_matrix_info"]["cy"]
+        if type == "Pinehole":
+            D_0 = result_info_dict["camera_matrix_info"]["k_list"][0]
+            D_1 = result_info_dict["camera_matrix_info"]["k_list"][1]
+            D_2 = 0
+            D_3 = 0
+            D_4 = 0
+        elif type == "Fisheye":
+            D_0 = result_info_dict["camera_matrix_info"]["k_list"][0]
+            D_1 = result_info_dict["camera_matrix_info"]["k_list"][1]
+            D_2 = result_info_dict["camera_matrix_info"]["k_list"][2]
+            D_3 = result_info_dict["camera_matrix_info"]["k_list"][3]
+            D_4 = 0
+
+        # replace value
+        sensor_param_template = sensor_param_template.replace("date_template", data)
+        sensor_param_template = sensor_param_template.replace("type_template", type)
+        sensor_param_template = sensor_param_template.replace(
+            "width_template", str(width)
+        )
+        sensor_param_template = sensor_param_template.replace(
+            "height_template", str(height)
+        )
+        sensor_param_template = sensor_param_template.replace(
+            "color_space_template", color_space
+        )
+        sensor_param_template = sensor_param_template.replace(
+            "K_0_0_template", str(K_0_0)
+        )
+        sensor_param_template = sensor_param_template.replace(
+            "K_1_1_template", str(K_1_1)
+        )
+        sensor_param_template = sensor_param_template.replace(
+            "K_0_2_template", str(K_0_2)
+        )
+        sensor_param_template = sensor_param_template.replace(
+            "K_1_2_template", str(K_1_2)
+        )
+        sensor_param_template = sensor_param_template.replace("D_0_template", str(D_0))
+        sensor_param_template = sensor_param_template.replace("D_1_template", str(D_1))
+        sensor_param_template = sensor_param_template.replace("D_2_template", str(D_2))
+        sensor_param_template = sensor_param_template.replace("D_3_template", str(D_3))
+        sensor_param_template = sensor_param_template.replace("D_4_template", str(D_4))
+
+        # save to file
+        with open(result_filname, "w") as f:
+            f.write(sensor_param_template)
