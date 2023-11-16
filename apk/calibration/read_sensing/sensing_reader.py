@@ -380,6 +380,13 @@ class SensingReader:
         fy = camera_matrix_info["fy"]
         cx = camera_matrix_info["cx"]
         cy = camera_matrix_info["cy"]
+
+        # fx fy cx cy 仅保留4位小数
+        fx = round(fx, 4)
+        fy = round(fy, 4)
+        cx = round(cx, 4)
+        cy = round(cy, 4)
+
         model = camera_matrix_info["model"].lower()
         # judge camera is fisheye or pinhole
         if model == "pinhole":
@@ -409,6 +416,10 @@ class SensingReader:
             k_list.append(camera_matrix_info["fisheye_k4"])
         else:
             raise Exception("camera_matrix_info model error")
+
+        # k_list 和 p_list 保留4位小数
+        k_list = [round(k, 4) for k in k_list]
+        p_list = [round(p, 4) for p in p_list]
 
         result_info_dict = {}
         result_info_dict["camera_info"] = self.result_info_dict["camera_info"]
@@ -503,8 +514,8 @@ sensor_units {
         if type == "Pinehole":
             D_0 = result_info_dict["camera_matrix_info"]["k_list"][0]
             D_1 = result_info_dict["camera_matrix_info"]["k_list"][1]
-            D_2 = 0
-            D_3 = 0
+            D_2 = result_info_dict["camera_matrix_info"]["p_list"][0]
+            D_3 = result_info_dict["camera_matrix_info"]["p_list"][1]
             D_4 = 0
         elif type == "Fisheye":
             D_0 = result_info_dict["camera_matrix_info"]["k_list"][0]

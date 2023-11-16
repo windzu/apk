@@ -208,7 +208,12 @@ def parse_camera_matrix_info(result):
         )
 
         # 使用struct模块将这个字节串解析为浮点数
-        return struct.unpack("<d", byte_string)[0]
+        result_in_double = struct.unpack("<d", byte_string)[0]
+
+        # 只保留小数点后6位并且不使用科学计数法而且应该是浮点数
+        result_in_double = float("%.6f" % result_in_double)
+
+        return result_in_double
 
     # image_width
     camera_matrix_info["image_width"] = int(result[0], 16) + int(result[1], 16) * 2**8
