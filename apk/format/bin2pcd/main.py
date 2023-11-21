@@ -1,4 +1,12 @@
 """
+Author: wind windzu1@gmail.com
+Date: 2023-11-07 17:15:41
+LastEditors: wind windzu1@gmail.com
+LastEditTime: 2023-11-20 19:04:58
+Description: 
+Copyright (c) 2023 by windzu, All Rights Reserved. 
+"""
+"""
 Author: windzu windzu1@gmail.com
 Date: 2023-09-09 18:58:55
 LastEditors: windzu windzu1@gmail.com
@@ -36,6 +44,11 @@ def parse_args(argv):
     )
 
     args = parser.parse_args(argv)
+
+    # check input dims
+    dims = ["xyz", "xyzi", "xyzir"]
+    if args.input_dims not in dims:
+        raise ValueError("input dims must be one of {}".format(dims))
     return args
 
 

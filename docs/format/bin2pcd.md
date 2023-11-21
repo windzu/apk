@@ -12,5 +12,9 @@
 ### 输入参数的使用例子
 
 ```bash
-pk format bin2pcd --input ./bins --input_dims xyzi --output ./pcds
+apk format bin2pcd --input ./bins --input_dims xyz --output ./pcds
+
+apk format bin2pcd --input ./bins --input_dims xyzi --output ./pcds
+
+apk format bin2pcd --input ./bins --input_dims xyzir --output ./pcds
 ```
