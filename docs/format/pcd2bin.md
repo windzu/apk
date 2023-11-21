@@ -12,5 +12,9 @@
 ### 输入参数的使用例子
 
 ```bash
+# 转换单个文件，输出到指定目录，输出文件名为test.bin
+apk format pcd2bin --input ./test.pcd --output_dims xyzi --output ./
+
+# 转换文件夹，输出到指定目录
 apk format pcd2bin --input ./pcds --output_dims xyzi --output ./bins
 ```
