@@ -1,27 +1,3 @@
-"""
-Author: windzu windzu1@gmail.com
-Date: 2023-11-07 23:04:47
-LastEditors: windzu windzu1@gmail.com
-LastEditTime: 2023-11-07 23:11:29
-Description: 
-Copyright (c) 2023 by windzu, All Rights Reserved. 
-"""
-"""
-Author: wind windzu1@gmail.com
-Date: 2023-11-07 17:15:41
-LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-11-07 22:48:06
-Description: 
-Copyright (c) 2023 by windzu, All Rights Reserved. 
-"""
-"""
-Author: wind windzu1@gmail.com
-Date: 2023-11-07 17:15:41
-LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-11-07 17:39:26
-Description: 
-Copyright (c) 2023 by windzu, All Rights Reserved. 
-"""
 import argparse
 import os
 import time
@@ -34,9 +10,9 @@ from .merge_bag import MergeBag
 
 
 class MergeRecord:
-    def __init__(self, input_path_list, merge_bag_flag=False):
-        self.input_path_list = input_path_list
-        self.merge_bag_flag = merge_bag_flag
+    def __init__(self, records_path, file_path_list):
+        self.records_path = records_path
+        self.file_path_list = file_path_list
 
         recorder2rosbag_path = "~/repo_ws/optimus-modules/bin/recorder2rosbag"
         recorder2rosbag_path = os.path.expanduser(recorder2rosbag_path)
@@ -50,39 +26,31 @@ class MergeRecord:
 
     def run(self):
         # create a folder to save config file
-        bags_folder_path = os.path.join(
-            os.path.dirname(self.input_path_list[0]), "bags"
-        )
+        scene_name = self.file_path_list[0].split("/")[-2]
+        bags_folder_path = os.path.join(self.records_path, "bags")
+        scene_folder_path = os.path.join(bags_folder_path, scene_name)
+
         # check if exit bags folder
-        if not os.path.exists(bags_folder_path):
-            os.makedirs(bags_folder_path)
+        if not os.path.exists(scene_folder_path):
+            os.makedirs(scene_folder_path)
 
-        config_folder_name = self.input_path_list[0].split("/")[-1].split(".")[0]
-        config_folder_path = os.path.join(bags_folder_path, config_folder_name)
+        for i, file_path in track(enumerate(self.file_path_list)):
+            recorder_file_path = file_path
 
-        if not os.path.exists(config_folder_path):
-            os.makedirs(config_folder_path)
-
-        bag_file_path_list = []
-        for i, file_path in track(enumerate(self.input_path_list)):
-            recorder_file_name = file_path
-            bag_file_name = file_path + ".bag"
-            bag_file_name = os.path.join(
-                config_folder_path, bag_file_name.split("/")[-1]
-            )
-            bag_file_path_list.append(bag_file_name)
+            file_name = file_path.split("/")[-1]
+            bag_file_path = os.path.join(scene_folder_path, file_name + ".bag")
+            pb_file_path = os.path.join(scene_folder_path, file_name + ".pb.txt")
 
             # cp recorder2ros_config.pb.txt and change 1 2 line
             # replace first line to "bag_file_name: ${bag_file_name}"
             # replace second line to "recorder_file_name: ${recorder_file_name}"
-            new_config_name = f"{config_folder_path}/{i}.pb.txt"
-            os.system(f"cp {self.recorder2ros_config} {new_config_name}")
+            os.system(f"cp {self.recorder2ros_config} {pb_file_path}")
 
-            with open(new_config_name, "r") as f:
+            with open(pb_file_path, "r") as f:
                 lines = f.readlines()
-                lines[0] = 'bag_file_name : "' + str(bag_file_name) + '"\n'
-                lines[1] = 'recorder_file_name : "' + str(recorder_file_name) + '"\n'
-            with open(new_config_name, "w") as f:
+                lines[0] = 'bag_file_name : "' + str(bag_file_path) + '"\n'
+                lines[1] = 'recorder_file_name : "' + str(recorder_file_path) + '"\n'
+            with open(pb_file_path, "w") as f:
                 f.writelines(lines)
 
 
@@ -132,42 +100,41 @@ def main(args, unknown):
 
     input_path = os.path.abspath(input_path)
 
-    merge_bag_flag = args.merge_bag
-
     input_path_list = []
     # check input_path if is a file or folder
     if os.path.isfile(input_path):
         print("input_path should be a folder")
         return
-    elif os.path.isdir(input_path):
-        for file in os.listdir(input_path):
-            if len(file.split(".")) == 3:
-                if file.split(".")[-2] == "record":
-                    input_path_list.append(input_path + "/" + file)
 
-    input_path_list.sort()
-
-    # split input_path_list to multi list by filename
-    input_path_list_split = {}
-    for file_path in input_path_list:
-        file_name = file_path.split("/")[-1]
-        file_prefix = file_name.split(".")[0]
-        if file_prefix not in input_path_list_split:
-            input_path_list_split[file_prefix] = [file_path]
-        else:
-            input_path_list_split[file_prefix].append(file_path)
+    # get all scene file path
+    scene_dict = {}
+    # iter all folder in input_path
+    for folder in os.listdir(input_path):
+        folder_path = os.path.join(input_path, folder)
+        # check if folder is a folder
+        if os.path.isdir(folder_path):
+            # iter all file in folder
+            file_path_list = []
+            for file in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, file)
+                # check if file is a file
+                if os.path.isfile(file_path):
+                    if os.path.getsize(file_path) > 50 * 1024 * 1024:
+                        file_path_list.append(file_path)
+            file_path_list.sort()
+            if len(file_path_list) > 0:
+                scene_dict[folder] = file_path_list
 
     # merge record
-    for file_prefix in input_path_list_split:
-        input_path_list = input_path_list_split[file_prefix]
+    for scene_name in scene_dict:
+        file_path_list = scene_dict[scene_name]
         merge_record = MergeRecord(
-            input_path_list=input_path_list,
-            merge_bag_flag=merge_bag_flag,
+            records_path=input_path, file_path_list=file_path_list
         )
         merge_record.run()
 
     # generate a convert.sh
-    convert_shell_path = os.path.join(input_path, "bags", "convert.sh")
+    convert_shell_path = os.path.join(input_path, "convert.sh")
     # content as below
     #     #!/bin/bash
     #     # 获取 record2bag 可执行文件的路径
@@ -176,9 +143,11 @@ def main(args, unknown):
     #
     #     # 当前脚本所在目录
     #     DIR=$(dirname "$0")
+    #     # get bags folder path
+    #     BAGS_DIR=$(dirname "$DIR")/bags
     #
     #     # 遍历目录中的所有子文件夹
-    #     for folder in $DIR/*; do
+    #     for folder in $BAGS_DIR/*; do
     #         # 检查是否为目录
     #         if [ -d "$folder" ]; then
     #             # 遍历目录中的所有.pb.txt文件
@@ -195,6 +164,10 @@ def main(args, unknown):
     #     # 结束脚本
     #     echo "Conversion complete."
 
+    # check if exit convert_shell_path sub folder
+    if not os.path.exists(os.path.dirname(convert_shell_path)):
+        os.makedirs(os.path.dirname(convert_shell_path))
+
     with open(convert_shell_path, "w") as f:
         f.write("#!/bin/bash\n")
         f.write(
@@ -203,8 +176,10 @@ def main(args, unknown):
         )
         f.write("# 当前脚本所在目录\n")
         f.write('DIR=$(dirname "$0")\n\n')
+        f.write("# get bags folder path\n")
+        f.write('BAGS_DIR=$(dirname "$DIR")/bags\n\n')
         f.write("# 遍历目录中的所有子文件夹\n")
-        f.write("for folder in $DIR/*; do\n")
+        f.write("for folder in $BAGS_DIR/*; do\n")
         f.write("    # 检查是否为目录\n")
         f.write('    if [ -d "$folder" ]; then\n')
         f.write("        # 遍历目录中的所有.pb.txt文件\n")

@@ -13,6 +13,9 @@ apk merge bag -i ./bags
 apk merge bag -i ./bags -o ./bags/output.bag
 
 apk merge bag -i ./bags -o ./bags/output.bag -c lz4
+
+# 特殊情况
+apk merge bag -i ./bags -m explicit
 ```
 
 ### Example
@@ -61,4 +64,28 @@ bags
     ├── 0.bag
     ├── 1.bag
     └── output.bag
+```
+
+执行
+
+```bash
+apk merge bag -i ./bags -m explicit
+```
+
+文件夹结构如下：
+
+```bash
+# example 1
+报错
+
+# example 2
+bags_0.bag
+bags_1.bag
+bags
+├── bags_0
+│   ├── 0.bag
+│   ├── 1.bag
+└── bags_1
+    ├── 0.bag
+    ├── 1.bag
 ```

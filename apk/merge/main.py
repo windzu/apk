@@ -1,13 +1,3 @@
-"""
-Author: wind windzu1@gmail.com
-Date: 2023-09-08 09:53:06
-LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-09-08 13:07:43
-Description: 
-Copyright (c) 2023 by windzu, All Rights Reserved. 
-"""
-
-
 def bag_command(args, unknown):
     print("merge bag command")
     from .merge_bag import main as bag_main
@@ -16,10 +6,13 @@ def bag_command(args, unknown):
 
 
 def record_command(args, unknown):
-    print("merge record command")
+    print("1. receive merge record files command")
+    print("2. generate convert record files to bag files shell script")
     from .merge_record import main as record_main
 
     record_main(args, unknown)
+    print("3. shell script generated")
+    print("4. please into container and run the shell script")
 
 
 def add_arguments(parser):

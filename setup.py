@@ -1,27 +1,3 @@
-"""
-Author: wind windzu1@gmail.com
-Date: 2023-11-14 15:14:14
-LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-11-14 15:53:39
-Description: 
-Copyright (c) 2023 by windzu, All Rights Reserved. 
-"""
-"""
-Author: wind windzu1@gmail.com
-Date: 2023-11-07 17:15:41
-LastEditors: wind windzu1@gmail.com
-LastEditTime: 2023-11-07 17:17:17
-Description: 
-Copyright (c) 2023 by windzu, All Rights Reserved. 
-"""
-"""
-Author: windzu windzu1@gmail.com
-Date: 2023-11-06 23:34:28
-LastEditors: windzu windzu1@gmail.com
-LastEditTime: 2023-11-07 00:31:44
-Description: 
-Copyright (c) 2023 by windzu, All Rights Reserved. 
-"""
 import sys
 
 from setuptools import find_packages, setup

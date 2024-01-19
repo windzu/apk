@@ -4,6 +4,8 @@ pyyaml
 rospkg
 wind-pypcd
 rich
+pycryptodomex
+gnupg
 
 # capture
 PyGObject

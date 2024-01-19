@@ -8,8 +8,104 @@
 
 ## Usage
 
+`records`文件夹结构
+
+```bash
+records
+├── scene1
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
+├── scene2
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
+```
+
+执行命令,生成转换脚本
+
 ```bash
 apk merge record -i ./records # 仅生成配置文件
+```
+
+生成转换脚本后文件夹结构
+
+```bash
+records
+├── convert.sh
+├── bags
+│   ├── scene1
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.pb.txt
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.pb.txt
+│   ├── scene2
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.pb.txt
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.pb.txt
+├── scene1
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
+├── scene2
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
+```
+
+执行转换脚本
+
+```bash
+./convert.sh
+```
+
+转换后文件夹结构
+
+```bash
+records
+├── convert.sh
+├── bags
+│   ├── scene1
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.bag
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.bag
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.pb.txt
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.pb.txt
+│   ├── scene2
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.bag
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.bag
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.pb.txt
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.pb.txt
+├── scene1
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
+├── scene2
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
+```
+
+合并每个scene下的rosbag文件
+
+```bash
+apk merge bag -i ./bags -m explicit
+```
+
+合并后文件夹结构
+
+```bash
+records
+├── scene1.bag
+├── scene2.bag
+├── convert.sh
+├── bags
+│   ├── scene1
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.bag
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.bag
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.pb.txt
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.pb.txt
+│   ├── scene2
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.bag
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.bag
+│   │   ├── YC800B01-N1-0001-20240111165611.record.00411.record.pb.txt
+│   │   └── YC800B01-N1-0001-20240111165628.record.00412.record.pb.txt
+├── scene1
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
+├── scene2
+│   ├── YC800B01-N1-0001-20240111165611.record.00411.record
+│   └── YC800B01-N1-0001-20240111165628.record.00412.record
 ```
 
 ### 详解

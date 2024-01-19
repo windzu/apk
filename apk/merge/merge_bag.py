@@ -64,6 +64,15 @@ def parse_args(argv):
         help="Compress the bag by bz2 or lz4",
     )
 
+    parser.add_argument(
+        "--mode",
+        "-m",
+        type=str,
+        default="implicit",
+        choices=["implicit", "explicit"],
+        help="Specify the mode to use when merging bags.",
+    )
+
     args = parser.parse_args(argv)
     return args
 
@@ -76,6 +85,8 @@ def main(args, unknown):
     if not os.path.exists(input_path):
         print(f"{input_path} not exists")
         return
+
+    input_path_parent_path = os.path.dirname(input_path)
 
     input_path_list_list = []
     # check input_path if is a file or folder
@@ -98,9 +109,13 @@ def main(args, unknown):
     output_path_list = []
     for input_path_list in input_path_list_list:
         if args.output is None:
-            output_path = os.path.join(
-                os.path.dirname(input_path_list[0]), "output.bag"
-            )
+            if args.mode == "implicit":
+                output_path = os.path.join(
+                    os.path.dirname(input_path_list[0]), "output.bag"
+                )
+            elif args.mode == "explicit":
+                scene_name = os.path.basename(os.path.dirname(input_path_list[0]))
+                output_path = os.path.join(input_path_parent_path, f"{scene_name}.bag")
             output_path_list.append(output_path)
         else:
             output_path = os.path.join(os.path.dirname(input_path_list[0]), args.output)
@@ -114,10 +129,3 @@ def main(args, unknown):
             output=output_path,
         )
         merge_bag.run()
-    # input_path_list.sort()
-    # merge_bag = MergeBag(
-    #     input_path_list=input_path_list,
-    #     compression=args.compression,
-    #     output=args.output,
-    # )
-    # merge_bag.run()
