@@ -27,7 +27,7 @@ def parse_requirements(fname_list=[]):
 setup(
     # 描述信息
     name="apk",
-    version="0.0.5",
+    version="0.0.6",
     description="awesome perception kit",
     author="windzu",
     author_email="windzu1@gmail.com",
