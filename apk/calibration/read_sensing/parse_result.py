@@ -6,6 +6,7 @@ LastEditTime: 2023-09-01 15:02:12
 Description: 
 Copyright (c) 2023 by windzu, All Rights Reserved. 
 """
+
 import struct
 
 
@@ -219,9 +220,7 @@ def parse_camera_matrix_info(result):
     camera_matrix_info["image_width"] = int(result[0], 16) + int(result[1], 16) * 2**8
 
     # image_height
-    camera_matrix_info["image_height"] = (
-        int(result[2], 16) + int(result[3], 16) * 2**8
-    )
+    camera_matrix_info["image_height"] = int(result[2], 16) + int(result[3], 16) * 2**8
 
     # model
     if result[4] == "0x01":
