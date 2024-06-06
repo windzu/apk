@@ -36,7 +36,7 @@
 apk capture lidar --file xxx.bag --topics '["/lidar_points/top"]' --store_path ~/Downloads/capture/lidar
 
 # manual mode
-apk capture lidar --topics '["/lidar_points/fusion", "/lidar_points/top", "/terrain_map"]' --suffix .pcd --store_dims xyzi --store_path ~/Downloads/capture/lidar
+apk capture lidar --topics '["/lidar_points/fusion", "/lidar_points/top", "/terrain_map"]' --store_method manual --suffix .pcd --store_dims xyzi --store_path ~/Downloads/capture/lidar
 ```
 
 ### 输入配置文件的使用例子
