@@ -120,9 +120,17 @@ class Capture:
                 if sanitized_topic_name not in self.file_counter:
                     self.file_counter[sanitized_topic_name] = 0
 
+                # 使用msg的header中的时间戳
+                timestamp_ns = data.header.stamp.to_nsec()
+                timestamp_ms = round(timestamp_ns / 1e6)  # 转换为毫秒
+
                 # 构造文件名
-                file_name = str(self.file_counter[sanitized_topic_name]) + self.suffix
+                file_name = str(timestamp_ms) + self.suffix
                 full_file_path = os.path.join(dir_path, file_name)
+
+                # # 构造文件名
+                # file_name = str(self.file_counter[sanitized_topic_name]) + self.suffix
+                # full_file_path = os.path.join(dir_path, file_name)
 
                 if self.suffix == ".pcd":
                     # 保存为PCD格式
